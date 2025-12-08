@@ -15,13 +15,25 @@ import {
 } from 'react-icons/md'
 
 export default function AdminDashboard() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [stats, setStats] = useState({
     tests: 0,
     attempts: 0,
     flagged: 0,
   })
   const [loading, setLoading] = useState(true)
+
+  // Wait for session to be ready before rendering
+  if (status === 'loading' || !session) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-16">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading dashboard...</p>
+        </div>
+      </AdminLayout>
+    )
+  }
 
   useEffect(() => {
     fetchStats()

@@ -154,17 +154,11 @@ export default function ConsentPage() {
           // Popup opened successfully
           toast.success('Opening test in new window...')
           
-          // Focus the new window
-          newWindow.focus()
+        // Focus the new window
+        newWindow.focus()
 
-          // Request fullscreen after window loads (fullscreen API requires user interaction)
-          // We'll handle this in the exam page itself
-          setTimeout(() => {
-            if (newWindow && !newWindow.closed) {
-              // Send message to request fullscreen
-              newWindow.postMessage({ type: 'REQUEST_FULLSCREEN' }, '*')
-            }
-          }, 1000)
+        // Fullscreen will be requested automatically in the exam page on load
+        // No need to send postMessage - it's handled in the exam page useEffect
         }
       } else {
         const error = await res.json()

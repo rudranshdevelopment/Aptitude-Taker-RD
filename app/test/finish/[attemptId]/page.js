@@ -139,26 +139,27 @@ export default function FinishPage() {
                   try {
                     window.close()
                   } catch (e) {
-                    // If close() fails, redirect to blank page
-                    window.location.href = 'about:blank'
+                    // If close() fails, just show a message
+                    // Don't redirect to about:blank as it causes message channel errors
                   }
                   
-                  // Fallback: if window didn't close after a short delay, redirect to blank page
+                  // Fallback: if window didn't close, show message
                   setTimeout(() => {
                     try {
-                      if (!document.hidden && window.location.href !== 'about:blank') {
-                        window.location.href = 'about:blank'
+                      if (!document.hidden) {
+                        // Instead of about:blank, just show a message
+                        alert('You can now safely close this window.')
                       }
                     } catch (e) {
                       // Ignore errors
                     }
-                  }, 300)
+                  }, 500)
                 } catch (error) {
-                  // Final fallback: redirect to blank page
+                  // If all else fails, just show message
                   try {
-                    window.location.href = 'about:blank'
+                    alert('You can now safely close this window.')
                   } catch (e) {
-                    // If all else fails, just ignore
+                    // Ignore errors
                   }
                 }
               }
@@ -171,7 +172,7 @@ export default function FinishPage() {
             Close Window
           </button>
           <p className="text-xs text-gray-500 mt-4">
-            This will close the test window. If it doesn't close automatically, you can manually close this tab.
+            Click the button above to close the test window. If it doesn't close automatically, you can manually close this tab.
           </p>
         </div>
       </div>

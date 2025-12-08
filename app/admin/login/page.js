@@ -7,6 +7,21 @@ import toast from 'react-hot-toast'
 import { MdLock, MdEmail, MdAssignment, MdArrowBack } from 'react-icons/md'
 import Link from 'next/link'
 
+// Helper to refresh session
+const refreshSession = async () => {
+  try {
+    const response = await fetch('/api/auth/session', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    return await response.json()
+  } catch (error) {
+    console.error('Error refreshing session:', error)
+    return null
+  }
+}
+
 export default function AdminLoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -36,31 +51,21 @@ export default function AdminLoginPage() {
       if (result?.ok || !result?.error) {
         toast.success('Login successful')
         
-        // Wait a moment for session to be established
-        await new Promise(resolve => setTimeout(resolve, 200))
+        // Force a session refresh to ensure cookie is set
+        await refreshSession()
+        
+        // Wait a moment for cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 300))
         
         // Verify session was created
-        try {
-          const session = await getSession()
-          
-          if (session && session.user?.role === 'admin') {
-            // Use window.location for a hard redirect (works better in production)
-            window.location.href = '/admin/dashboard'
-          } else {
-            // Fallback: try router with refresh
-            router.push('/admin/dashboard')
-            router.refresh()
-            
-            // If still not working after a delay, force redirect
-            setTimeout(() => {
-              if (window.location.pathname === '/admin/login') {
-                window.location.href = '/admin/dashboard'
-              }
-            }, 500)
-          }
-        } catch (sessionError) {
-          console.error('Session check error:', sessionError)
-          // Fallback: force redirect anyway
+        const session = await getSession()
+        
+        if (session && session.user?.role === 'admin') {
+          // Session confirmed, redirect with hard reload
+          window.location.href = '/admin/dashboard'
+        } else {
+          // Session not ready yet, but redirect anyway
+          // The page will wait for session to load
           window.location.href = '/admin/dashboard'
         }
       } else {

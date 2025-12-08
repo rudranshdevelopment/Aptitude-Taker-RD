@@ -26,6 +26,7 @@ export default function AdminLayout({ children }) {
     }
   }, [status, router])
 
+  // Show loading state while checking session
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
@@ -37,7 +38,13 @@ export default function AdminLayout({ children }) {
     )
   }
 
-  if (!session || session.user.role !== 'admin') {
+  // If unauthenticated, show nothing (redirect will happen)
+  if (status === 'unauthenticated') {
+    return null
+  }
+
+  // If no session or not admin, show nothing (will redirect)
+  if (!session || session.user?.role !== 'admin') {
     return null
   }
 

@@ -73,23 +73,8 @@ export default function ExamRoom() {
       }
     }
 
-    // Listen for fullscreen request from parent window
-    const handleMessage = (event) => {
-      try {
-        // Only handle messages from same origin for security
-        if (event.origin !== window.location.origin) {
-          return
-        }
-        
-        if (event.data && event.data.type === 'REQUEST_FULLSCREEN') {
-          requestFullscreenOnLoad()
-        }
-      } catch (error) {
-        // Silently ignore message errors (often from browser extensions)
-      }
-    }
-
-    window.addEventListener('message', handleMessage)
+    // Fullscreen is requested automatically on page load
+    // No need for message listener - it was causing channel errors
     
     // Request fullscreen on load (since window was opened from user interaction)
     requestFullscreenOnLoad()
@@ -108,7 +93,6 @@ export default function ExamRoom() {
     fetchAttempt()
     return () => {
       cleanup()
-      window.removeEventListener('message', handleMessage)
       document.removeEventListener('click', handleUserInteraction)
       document.removeEventListener('keydown', handleUserInteraction)
       // Restore title
