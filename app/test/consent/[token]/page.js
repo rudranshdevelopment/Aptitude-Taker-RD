@@ -19,28 +19,7 @@ export default function ConsentPage() {
   useEffect(() => {
     fetchAssignment()
     
-    // Listen for close message from test window
-    const handleMessage = (event) => {
-      if (event.data && event.data.type === 'CLOSE_WINDOW') {
-        try {
-          window.close()
-          // If window doesn't close, redirect to blank page
-          setTimeout(() => {
-            if (!document.hidden) {
-              window.location.href = 'about:blank'
-            }
-          }, 200)
-        } catch (error) {
-          console.error('Error closing window:', error)
-          window.location.href = 'about:blank'
-        }
-      }
-    }
-    
-    window.addEventListener('message', handleMessage)
-    
     return () => {
-      window.removeEventListener('message', handleMessage)
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
         streamRef.current = null

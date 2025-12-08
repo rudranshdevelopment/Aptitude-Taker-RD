@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { MdLock, MdEmail, MdAssignment, MdArrowBack } from 'react-icons/md'
@@ -24,17 +24,52 @@ export default function AdminLoginPage() {
         redirect: false,
         email: formData.email,
         password: formData.password,
+        callbackUrl: '/admin/dashboard',
       })
 
       if (result?.error) {
         toast.error('Invalid credentials')
-      } else {
+        setLoading(false)
+        return
+      }
+
+      if (result?.ok || !result?.error) {
         toast.success('Login successful')
-        router.push('/admin/dashboard')
+        
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // Verify session was created
+        try {
+          const session = await getSession()
+          
+          if (session && session.user?.role === 'admin') {
+            // Use window.location for a hard redirect (works better in production)
+            window.location.href = '/admin/dashboard'
+          } else {
+            // Fallback: try router with refresh
+            router.push('/admin/dashboard')
+            router.refresh()
+            
+            // If still not working after a delay, force redirect
+            setTimeout(() => {
+              if (window.location.pathname === '/admin/login') {
+                window.location.href = '/admin/dashboard'
+              }
+            }, 500)
+          }
+        } catch (sessionError) {
+          console.error('Session check error:', sessionError)
+          // Fallback: force redirect anyway
+          window.location.href = '/admin/dashboard'
+        }
+      } else {
+        toast.error('Login failed. Please try again.')
+        setLoading(false)
       }
     } catch (error) {
-      toast.error('Login failed')
-    } finally {
+      console.error('Login error:', error)
+      toast.error('Login failed. Please try again.')
       setLoading(false)
     }
   }

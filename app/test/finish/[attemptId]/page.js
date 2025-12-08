@@ -125,30 +125,41 @@ export default function FinishPage() {
               // Function to close windows
               const closeWindows = () => {
                 try {
-                  // Send message to opener window to close itself
-                  if (window.opener && !window.opener.closed) {
+                  // Try to close opener window first (if it exists and was opened by us)
+                  if (window.opener && !window.opener.closed && window.opener.location) {
                     try {
-                      window.opener.postMessage({ type: 'CLOSE_WINDOW' }, '*')
-                      // Also try to close it directly
+                      // Try to close it directly without postMessage to avoid channel errors
                       window.opener.close()
                     } catch (e) {
-                      console.log('Could not close opener window:', e)
+                      // Ignore errors - opener might not be closeable
                     }
                   }
                   
                   // Close the current window
-                  window.close()
+                  try {
+                    window.close()
+                  } catch (e) {
+                    // If close() fails, redirect to blank page
+                    window.location.href = 'about:blank'
+                  }
                   
-                  // Fallback: if window didn't close, redirect to blank page
+                  // Fallback: if window didn't close after a short delay, redirect to blank page
                   setTimeout(() => {
-                    if (!document.hidden) {
-                      window.location.href = 'about:blank'
+                    try {
+                      if (!document.hidden && window.location.href !== 'about:blank') {
+                        window.location.href = 'about:blank'
+                      }
+                    } catch (e) {
+                      // Ignore errors
                     }
-                  }, 200)
+                  }, 300)
                 } catch (error) {
-                  console.error('Error closing window:', error)
                   // Final fallback: redirect to blank page
-                  window.location.href = 'about:blank'
+                  try {
+                    window.location.href = 'about:blank'
+                  } catch (e) {
+                    // If all else fails, just ignore
+                  }
                 }
               }
               

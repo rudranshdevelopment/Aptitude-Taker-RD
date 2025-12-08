@@ -75,8 +75,17 @@ export default function ExamRoom() {
 
     // Listen for fullscreen request from parent window
     const handleMessage = (event) => {
-      if (event.data && event.data.type === 'REQUEST_FULLSCREEN') {
-        requestFullscreenOnLoad()
+      try {
+        // Only handle messages from same origin for security
+        if (event.origin !== window.location.origin) {
+          return
+        }
+        
+        if (event.data && event.data.type === 'REQUEST_FULLSCREEN') {
+          requestFullscreenOnLoad()
+        }
+      } catch (error) {
+        // Silently ignore message errors (often from browser extensions)
       }
     }
 
