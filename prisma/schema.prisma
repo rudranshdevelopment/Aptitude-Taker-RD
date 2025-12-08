@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  candidate
+  proctor
+}
+
+enum QuestionType {
+  mcq
+  single
+  text
+  number
+}
+
+enum AttemptStatus {
+  in_progress
+  submitted
+  auto_submitted
+}
+
+enum EventType {
+  tab_switch
+  tab_return
+  camera_off
+  permission_revoked
+  devtools_open
+  warning_shown
+  recording_saved
+  blocked_shortcut
+  fullscreen_exit
+  consent_accepted
+  consent_rejected
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String?  // nullable for magic link users
+  role      UserRole @default(candidate)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdTests      Test[]            @relation("TestCreator")
+  assignments       TestAssignment[]
+  attempts          Attempt[]
+  proctoredAttempts Attempt[]          @relation("Proctor")
+
+  @@map("users")
+}
+
+model Test {
+  id                    String   @id @default(uuid())
+  title                 String
+  description           String?  @db.Text
+  durationSeconds       Int      @map("duration_seconds")
+  questionNavigation    String   @default("free") @map("question_navigation") // free or sequential
+  cameraRequired        Boolean  @default(false) @map("camera_required")
+  recordVideo           Boolean  @default(false) @map("record_video")
+  blockTabSwitch        Boolean  @default(false) @map("block_tab_switch")
+  disableCopyPaste      Boolean  @default(false) @map("disable_copy_paste")
+  requireFullscreen     Boolean  @default(false) @map("require_fullscreen")
+  autoFlagThreshold     Int      @default(3) @map("auto_flag_threshold")
+  expiresAt             DateTime? @map("expires_at")
+  createdBy             String   @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  creator     User            @relation("TestCreator", fields: [createdBy], references: [id])
+  questions   Question[]
+  assignments TestAssignment[]
+
+  @@map("tests")
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  testId        String       @map("test_id")
+  type          QuestionType
+  promptText    String       @db.Text @map("prompt_text")
+  imageUrl      String?      @map("image_url") // URL or path to uploaded image
+  choices       Json?        // for mcq/single choice
+  correctAnswer Json?        @map("correct_answer") // optional for auto-gradable
+  marks         Int          @default(1)
+  order         Int          @default(0)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@map("questions")
+}
+
+model TestAssignment {
+  id            String    @id @default(uuid())
+  testId        String    @map("test_id")
+  userId        String?   @map("user_id") // nullable for link-based guest
+  inviteToken   String    @unique @map("invite_token")
+  expiresAt     DateTime? @map("expires_at")
+  attemptsAllowed Int     @default(1) @map("attempts_allowed")
+  linkMode      String    @default("single_use") @map("link_mode") // single_use or bulk
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  test     Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id])
+  attempts Attempt[]
+
+  @@map("test_assignments")
+}
+
+model Attempt {
+  id          String        @id @default(uuid())
+  assignmentId String       @map("assignment_id")
+  userId      String?       @map("user_id")
+  startedAt   DateTime      @map("started_at")
+  finishedAt  DateTime?     @map("finished_at")
+  status      AttemptStatus @default(in_progress)
+  score       Float?
+  flagged     Boolean       @default(false)
+  metadata    Json?         // user agent, ip, etc.
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  assignment TestAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User?          @relation(fields: [userId], references: [id])
+  proctor    User?          @relation("Proctor", fields: [proctorId], references: [id])
+  proctorId  String?        @map("proctor_id")
+  answers    Answer[]
+  events     Event[]
+  recordings Recording[]
+
+  @@map("attempts")
+}
+
+model Answer {
+  id           String   @id @default(uuid())
+  attemptId    String   @map("attempt_id")
+  questionId   String   @map("question_id")
+  answerData   Json     @map("answer_data")
+  timeTakenMs  Int      @default(0) @map("time_taken_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("answers")
+}
+
+model Event {
+  id         String    @id @default(uuid())
+  attemptId  String    @map("attempt_id")
+  eventType  EventType @map("event_type")
+  eventData  Json      @map("event_data")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+model Recording {
+  id         String   @id @default(uuid())
+  attemptId  String   @map("attempt_id")
+  s3Path     String?  @map("s3_path")
+  localPath  String?  @map("local_path")
+  duration   Int?     // in seconds
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("recordings")
+}
+

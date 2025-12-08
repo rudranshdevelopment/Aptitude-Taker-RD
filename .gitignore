@@ -1,0 +1,148 @@
+# ========================================
+# Aptitude Taker RD - Professional .gitignore
+# ========================================
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Next.js
+/.next/
+/out/
+.next
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma
+/prisma/*.db
+/prisma/*.db-journal
+
+# Uploads (User Generated Content)
+uploads/
+!uploads/.gitkeep
+
+# Recordings
+recordings/
+!recordings/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Lock files (keep package-lock.json but ignore yarn.lock if using npm)
+# yarn.lock
+
+# Documentation temp files
+*.md~
+*.bak
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# Editor backups
+*.swp
+*.swo
+*.swn
+.*.sw[a-z]
+
+# ========================================
+# Keep these directories but ignore contents
+# ========================================
+uploads/*
+!uploads/.gitkeep
+recordings/*
+!recordings/.gitkeep
+
+# ========================================
+# Security - Never commit these!
+# ========================================
+.env
+.env.production
+.env.development
+.env.test
+*.pem
+*.key
+*.cert
+secrets/
+private/
+
+# ========================================
+# End of .gitignore
+# ========================================
