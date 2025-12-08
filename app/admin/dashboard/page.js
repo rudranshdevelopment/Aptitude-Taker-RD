@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import AdminLayout from '@/components/AdminLayout'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 import { 
   MdDescription, 
   MdCheckCircle, 
@@ -22,6 +23,17 @@ export default function AdminDashboard() {
     flagged: 0,
   })
   const [loading, setLoading] = useState(true)
+
+  // Show success message if redirected from login
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginSuccess = sessionStorage.getItem('loginSuccess')
+      if (loginSuccess === 'true') {
+        toast.success('Login successful!')
+        sessionStorage.removeItem('loginSuccess')
+      }
+    }
+  }, [])
 
   // Wait for session to be ready before rendering
   if (status === 'loading' || !session) {

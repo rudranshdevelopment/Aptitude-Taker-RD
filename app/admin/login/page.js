@@ -51,25 +51,30 @@ export default function AdminLoginPage() {
       if (result?.ok || !result?.error) {
         toast.success('Login successful')
         
-        // Force a session refresh to ensure cookie is set
-        await refreshSession()
+        // Store success message for dashboard
+        sessionStorage.setItem('loginSuccess', 'true')
         
-        // Wait for cookie to be set and available to middleware
-        // NextAuth sets the cookie, but middleware needs it to be readable
-        await new Promise(resolve => setTimeout(resolve, 800))
+        // Wait for NextAuth to set the cookie
+        // Then verify it's available via session endpoint
+        let cookieReady = false
+        let attempts = 0
+        const maxAttempts = 25 // 5 seconds total
         
-        // Verify session one more time
-        const session = await getSession()
-        
-        if (session && session.user?.role === 'admin') {
-          // Session confirmed - redirect with full page reload
-          // Using window.location.href ensures cookies are sent with the request
-          window.location.href = '/admin/dashboard'
-        } else {
-          // Session not confirmed but redirect anyway
-          // The middleware should see the cookie even if getSession doesn't
-          window.location.href = '/admin/dashboard'
+        while (!cookieReady && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+          
+          // Check if session cookie is available
+          const sessionData = await refreshSession()
+          if (sessionData && sessionData.user && sessionData.user.role === 'admin') {
+            cookieReady = true
+            break
+          }
+          attempts++
         }
+        
+        // Redirect using window.location which ensures cookies are sent
+        // This forces a full page reload with all cookies
+        window.location.href = '/admin/dashboard'
       } else {
         toast.error('Login failed. Please try again.')
         setLoading(false)
