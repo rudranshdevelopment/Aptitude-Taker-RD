@@ -54,18 +54,20 @@ export default function AdminLoginPage() {
         // Force a session refresh to ensure cookie is set
         await refreshSession()
         
-        // Wait a moment for cookie to be set
-        await new Promise(resolve => setTimeout(resolve, 300))
+        // Wait for cookie to be set and available to middleware
+        // NextAuth sets the cookie, but middleware needs it to be readable
+        await new Promise(resolve => setTimeout(resolve, 800))
         
-        // Verify session was created
+        // Verify session one more time
         const session = await getSession()
         
         if (session && session.user?.role === 'admin') {
-          // Session confirmed, redirect with hard reload
+          // Session confirmed - redirect with full page reload
+          // Using window.location.href ensures cookies are sent with the request
           window.location.href = '/admin/dashboard'
         } else {
-          // Session not ready yet, but redirect anyway
-          // The page will wait for session to load
+          // Session not confirmed but redirect anyway
+          // The middleware should see the cookie even if getSession doesn't
           window.location.href = '/admin/dashboard'
         }
       } else {
@@ -113,6 +115,7 @@ export default function AdminLoginPage() {
                 type="email"
                 id="email"
                 required
+                autoComplete="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="Enter your email address"
@@ -129,6 +132,7 @@ export default function AdminLoginPage() {
                 type="password"
                 id="password"
                 required
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"

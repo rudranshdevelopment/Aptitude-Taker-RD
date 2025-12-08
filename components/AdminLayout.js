@@ -21,8 +21,11 @@ export default function AdminLayout({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
+    // Only redirect if we're sure the user is not authenticated
+    // Don't redirect during loading state
     if (status === 'unauthenticated') {
-      router.push('/admin/login')
+      // Use replace to avoid back button issues
+      window.location.replace('/admin/login')
     }
   }, [status, router])
 
