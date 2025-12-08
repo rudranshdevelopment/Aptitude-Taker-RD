@@ -77,7 +77,7 @@ export async function PUT(request, { params }) {
         blockTabSwitch: body.blockTabSwitch,
         disableCopyPaste: body.disableCopyPaste,
         requireFullscreen: body.requireFullscreen,
-        autoFlagThreshold: body.autoFlagThreshold,
+        autoFlagThreshold: body.autoFlagThreshold ? parseInt(body.autoFlagThreshold) : null,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
     })

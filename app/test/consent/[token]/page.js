@@ -18,7 +18,29 @@ export default function ConsentPage() {
 
   useEffect(() => {
     fetchAssignment()
+    
+    // Listen for close message from test window
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'CLOSE_WINDOW') {
+        try {
+          window.close()
+          // If window doesn't close, redirect to blank page
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.location.href = 'about:blank'
+            }
+          }, 200)
+        } catch (error) {
+          console.error('Error closing window:', error)
+          window.location.href = 'about:blank'
+        }
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
     return () => {
+      window.removeEventListener('message', handleMessage)
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
         streamRef.current = null
@@ -120,8 +142,51 @@ export default function ConsentPage() {
 
       if (res.ok) {
         const attempt = await res.json()
-        toast.success('Starting test...')
-        router.push(`/test/exam/${attempt.id}`)
+        
+        // Open test in a new window (not tab) with specific features
+        // Calculate window size to be nearly fullscreen
+        const width = window.screen.availWidth || 1920
+        const height = window.screen.availHeight || 1080
+        const left = 0
+        const top = 0
+        
+        const examUrl = `${window.location.origin}/test/exam/${attempt.id}`
+        
+        // Try to open in a new window first
+        const newWindow = window.open(
+          examUrl,
+          'AptitudeTest',
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,location=no,toolbar=no,menubar=no,personalbar=no`
+        )
+
+        // Check if popup was blocked
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked - fallback to same window
+          toast('Popup blocked. Opening test in this window...', { 
+            icon: '⚠️',
+            duration: 3000 
+          })
+          
+          // Small delay to show the message, then redirect
+          setTimeout(() => {
+            window.location.href = examUrl
+          }, 500)
+        } else {
+          // Popup opened successfully
+          toast.success('Opening test in new window...')
+          
+          // Focus the new window
+          newWindow.focus()
+
+          // Request fullscreen after window loads (fullscreen API requires user interaction)
+          // We'll handle this in the exam page itself
+          setTimeout(() => {
+            if (newWindow && !newWindow.closed) {
+              // Send message to request fullscreen
+              newWindow.postMessage({ type: 'REQUEST_FULLSCREEN' }, '*')
+            }
+          }, 1000)
+        }
       } else {
         const error = await res.json()
         toast.error(error.error || 'Failed to start test')

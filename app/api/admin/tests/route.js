@@ -69,7 +69,7 @@ export async function POST(request) {
         blockTabSwitch: blockTabSwitch || false,
         disableCopyPaste: disableCopyPaste || false,
         requireFullscreen: requireFullscreen || false,
-        autoFlagThreshold: autoFlagThreshold || 3,
+        autoFlagThreshold: autoFlagThreshold ? parseInt(autoFlagThreshold) : null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         createdBy: session.user.id,
       },

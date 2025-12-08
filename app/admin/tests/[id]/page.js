@@ -17,7 +17,8 @@ export default function TestDetailPage() {
     promptText: '',
     imageUrl: '',
     choices: ['', '', '', ''],
-    correctAnswer: '',
+    correctAnswer: '', // For single choice and text/number
+    correctAnswers: [], // For MCQ (multiple correct answers)
     marks: 1,
     order: 0,
   })
@@ -95,9 +96,26 @@ export default function TestDetailPage() {
       return
     }
 
-    if ((questionForm.type === 'mcq' || questionForm.type === 'single') && !questionForm.correctAnswer.trim()) {
-      toast.error('Please enter a correct answer')
-      return
+    // Validation for MCQ and single choice
+    if (questionForm.type === 'mcq' || questionForm.type === 'single') {
+      const choices = questionForm.choices.filter(c => c.trim() !== '')
+      
+      if (choices.length < 2) {
+        toast.error('Please provide at least 2 choices')
+        return
+      }
+
+      if (questionForm.type === 'mcq') {
+        if (questionForm.correctAnswers.length === 0) {
+          toast.error('Please select at least one correct answer for MCQ')
+          return
+        }
+      } else {
+        if (!questionForm.correctAnswer.trim()) {
+          toast.error('Please select a correct answer')
+          return
+        }
+      }
     }
 
     try {
@@ -105,9 +123,17 @@ export default function TestDetailPage() {
         ? questionForm.choices.filter(c => c.trim() !== '')
         : null
 
-      if (choices && choices.length < 2) {
-        toast.error('Please provide at least 2 choices')
-        return
+      // Prepare correct answer based on question type
+      let correctAnswerData = null
+      if (questionForm.type === 'mcq') {
+        // For MCQ, store array of correct answers
+        correctAnswerData = { value: questionForm.correctAnswers }
+      } else if (questionForm.type === 'single') {
+        // For single choice, store single value
+        correctAnswerData = { value: questionForm.correctAnswer.trim() }
+      } else if (questionForm.correctAnswer && questionForm.correctAnswer.trim()) {
+        // For text/numeric with answer
+        correctAnswerData = { value: questionForm.correctAnswer.trim() }
       }
 
       const res = await fetch(`/api/admin/tests/${params.id}/questions`, {
@@ -118,7 +144,7 @@ export default function TestDetailPage() {
           promptText: questionForm.promptText.trim(),
           imageUrl: questionForm.imageUrl || null,
           choices: choices ? { options: choices } : null,
-          correctAnswer: questionForm.correctAnswer ? { value: questionForm.correctAnswer.trim() } : null,
+          correctAnswer: correctAnswerData,
           marks: questionForm.marks || 1,
           order: test?.questions?.length || 0,
         }),
@@ -134,6 +160,7 @@ export default function TestDetailPage() {
           imageUrl: '',
           choices: ['', '', '', ''],
           correctAnswer: '',
+          correctAnswers: [],
           marks: 1,
           order: 0,
         })
@@ -212,16 +239,23 @@ export default function TestDetailPage() {
           {showQuestionForm && (
             <form onSubmit={handleAddQuestion} className="mb-6 p-4 border rounded-lg space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Question Type</label>
                 <select
                   value={questionForm.type}
-                  onChange={(e) => setQuestionForm({ ...questionForm, type: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                  onChange={(e) => {
+                    setQuestionForm({ 
+                      ...questionForm, 
+                      type: e.target.value,
+                      correctAnswer: '',
+                      correctAnswers: []
+                    })
+                  }}
+                  className="block w-full border-2 border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="mcq">Multiple Choice</option>
-                  <option value="single">Single Choice</option>
-                  <option value="text">Short Text</option>
-                  <option value="number">Numeric</option>
+                  <option value="mcq">Multiple Choice (MCQ) - Multiple correct answers</option>
+                  <option value="single">Single Choice - One correct answer</option>
+                  <option value="text">Short Text - Free text answer</option>
+                  <option value="number">Numeric - Number only</option>
                 </select>
               </div>
 
@@ -276,31 +310,85 @@ export default function TestDetailPage() {
 
               {(questionForm.type === 'mcq' || questionForm.type === 'single') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Choices</label>
-                  {questionForm.choices.map((choice, idx) => (
-                    <input
-                      key={idx}
-                      type="text"
-                      value={choice}
-                      onChange={(e) => {
-                        const newChoices = [...questionForm.choices]
-                        newChoices[idx] = e.target.value
-                        setQuestionForm({ ...questionForm, choices: newChoices })
-                      }}
-                      placeholder={`Option ${idx + 1}`}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 mb-2"
-                    />
-                  ))}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mt-2">Correct Answer</label>
-                    <input
-                      type="text"
-                      value={questionForm.correctAnswer}
-                      onChange={(e) => setQuestionForm({ ...questionForm, correctAnswer: e.target.value })}
-                      placeholder="Enter correct answer"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Answer Choices
+                  </label>
+                  <div className="space-y-2 mb-4">
+                    {questionForm.choices.map((choice, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        value={choice}
+                        onChange={(e) => {
+                          const newChoices = [...questionForm.choices]
+                          newChoices[idx] = e.target.value
+                          setQuestionForm({ ...questionForm, choices: newChoices })
+                        }}
+                        placeholder={`Option ${idx + 1}`}
+                        className="block w-full border-2 border-gray-300 rounded-lg shadow-sm py-2.5 px-4 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    ))}
                   </div>
+
+                  {questionForm.type === 'mcq' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Correct Answers (Select all that apply)
+                      </label>
+                      <div className="space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        {questionForm.choices.filter(c => c.trim() !== '').map((choice, idx) => (
+                          <label key={idx} className="flex items-center p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-primary-300 cursor-pointer transition-all">
+                            <input
+                              type="checkbox"
+                              checked={questionForm.correctAnswers.includes(choice)}
+                              onChange={(e) => {
+                                const newCorrectAnswers = e.target.checked
+                                  ? [...questionForm.correctAnswers, choice]
+                                  : questionForm.correctAnswers.filter(a => a !== choice)
+                                setQuestionForm({ ...questionForm, correctAnswers: newCorrectAnswers })
+                              }}
+                              className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-3 text-gray-900 font-medium">{choice}</span>
+                          </label>
+                        ))}
+                        {questionForm.choices.filter(c => c.trim() !== '').length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Add choices above first</p>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        ✓ Selected: {questionForm.correctAnswers.length} correct answer(s)
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Correct Answer (Select one)
+                      </label>
+                      <div className="space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        {questionForm.choices.filter(c => c.trim() !== '').map((choice, idx) => (
+                          <label key={idx} className={`flex items-center p-3 bg-white border-2 rounded-lg hover:border-primary-300 cursor-pointer transition-all ${
+                            questionForm.correctAnswer === choice ? 'border-primary-600 bg-primary-50' : 'border-gray-200'
+                          }`}>
+                            <input
+                              type="radio"
+                              name="correctAnswer"
+                              value={choice}
+                              checked={questionForm.correctAnswer === choice}
+                              onChange={(e) => setQuestionForm({ ...questionForm, correctAnswer: e.target.value })}
+                              className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300"
+                            />
+                            <span className={`ml-3 font-medium ${questionForm.correctAnswer === choice ? 'text-primary-700' : 'text-gray-900'}`}>
+                              {choice}
+                            </span>
+                          </label>
+                        ))}
+                        {questionForm.choices.filter(c => c.trim() !== '').length === 0 && (
+                          <p className="text-sm text-gray-500 italic">Add choices above first</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -8,7 +8,9 @@ import {
   MdAccessTime, 
   MdNavigateBefore, 
   MdNavigateNext, 
-  MdCheckCircle
+  MdCheckCircle,
+  MdWarning,
+  MdClose
 } from 'react-icons/md'
 
 export default function ExamRoom() {
@@ -21,6 +23,7 @@ export default function ExamRoom() {
   const [warning, setWarning] = useState(null)
   const [tabSwitchCount, setTabSwitchCount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false)
 
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -28,9 +31,79 @@ export default function ExamRoom() {
   const recordingIntervalRef = useRef(null)
 
   useEffect(() => {
+    // Hide website name in title bar
+    document.title = 'Assessment Portal'
+    
+    // Request fullscreen when page loads
+    const requestFullscreenOnLoad = async () => {
+      try {
+        // Wait a bit for the page to fully load
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        if (!document.fullscreenElement) {
+          // Try to enter fullscreen
+          let fullscreenRequested = false
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen()
+            fullscreenRequested = true
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            // Safari
+            await document.documentElement.webkitRequestFullscreen()
+            fullscreenRequested = true
+          } else if (document.documentElement.msRequestFullscreen) {
+            // IE/Edge
+            await document.documentElement.msRequestFullscreen()
+            fullscreenRequested = true
+          }
+          
+          // Check if fullscreen was successful after a short delay
+          setTimeout(() => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+              // Fullscreen not active, show prompt
+              setShowFullscreenPrompt(true)
+            }
+          }, 1000)
+        }
+      } catch (error) {
+        console.log('Fullscreen request failed or was denied:', error)
+        // Show prompt if fullscreen failed
+        setTimeout(() => {
+          setShowFullscreenPrompt(true)
+        }, 1000)
+      }
+    }
+
+    // Listen for fullscreen request from parent window
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'REQUEST_FULLSCREEN') {
+        requestFullscreenOnLoad()
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    
+    // Request fullscreen on load (since window was opened from user interaction)
+    requestFullscreenOnLoad()
+    
+    // Also try to request fullscreen on any user interaction
+    const handleUserInteraction = () => {
+      if (!document.fullscreenElement) {
+        requestFullscreenOnLoad()
+      }
+    }
+    
+    // Listen for user interactions to request fullscreen
+    document.addEventListener('click', handleUserInteraction, { once: true })
+    document.addEventListener('keydown', handleUserInteraction, { once: true })
+    
     fetchAttempt()
     return () => {
       cleanup()
+      window.removeEventListener('message', handleMessage)
+      document.removeEventListener('click', handleUserInteraction)
+      document.removeEventListener('keydown', handleUserInteraction)
+      // Restore title
+      document.title = 'Aptitude Taker RD'
     }
   }, [params.attemptId])
 
@@ -66,7 +139,15 @@ export default function ExamRoom() {
         if (test.cameraRequired || test.recordVideo) {
           startCamera()
         }
+        
+        // Always request fullscreen when test opens in new window
+        // Wait a moment for page to fully render
+        setTimeout(() => {
+          requestFullscreen()
+        }, 500)
+        
         if (test.requireFullscreen) {
+          // Also request fullscreen if test requires it (double check)
           requestFullscreen()
         }
         setupProctoring(test)
@@ -171,10 +252,12 @@ export default function ExamRoom() {
       const newCount = tabSwitchCount + 1
       setTabSwitchCount(newCount)
       logEvent('tab_switch', { count: newCount })
-      showWarning(`Warning: Tab switch detected (${newCount})`)
       
-      if (attempt?.assignment?.test?.autoFlagThreshold && newCount >= attempt.assignment.test.autoFlagThreshold) {
-        setWarning('Your session has been flagged due to multiple tab switches.')
+      const threshold = attempt?.assignment?.test?.autoFlagThreshold || 3
+      if (newCount >= threshold) {
+        setWarning(`Your session has been flagged due to ${newCount} tab switches. This will be reviewed by the administrator.`)
+      } else {
+        showWarning(`Tab switch detected (${newCount}/${threshold}). Please stay on this tab to avoid being flagged.`)
       }
     } else {
       logEvent('tab_return', {})
@@ -258,11 +341,17 @@ export default function ExamRoom() {
         }),
       })
       
-      if (!response.ok) {
-        console.error('Failed to save answer:', await response.text())
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Answer saved successfully:', data)
+      } else {
+        const errorText = await response.text()
+        console.error('Failed to save answer:', errorText)
+        toast.error('Failed to save answer')
       }
     } catch (error) {
       console.error('Failed to save answer:', error)
+      toast.error('Failed to save answer')
     }
   }
 
@@ -340,11 +429,53 @@ export default function ExamRoom() {
   const questions = test.questions
   const currentQuestion = questions[currentQuestionIndex]
 
+  const handleEnterFullscreen = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen()
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        await document.documentElement.webkitRequestFullscreen()
+      } else if (document.documentElement.msRequestFullscreen) {
+        await document.documentElement.msRequestFullscreen()
+      }
+      setShowFullscreenPrompt(false)
+    } catch (error) {
+      console.error('Fullscreen request failed:', error)
+      toast.error('Please press F11 or use your browser\'s fullscreen button')
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 exam-mode">
+    <div className="min-h-screen bg-gray-100 exam-mode flex flex-col">
       {warning && (
         <div className="fixed top-0 left-0 right-0 bg-red-600 text-white p-4 text-center z-50">
           {warning}
+        </div>
+      )}
+
+      {/* Fullscreen Prompt */}
+      {showFullscreenPrompt && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md mx-4 shadow-2xl">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Enter Fullscreen Mode</h3>
+            <p className="text-gray-700 mb-6">
+              For the best testing experience, please enter fullscreen mode. Click the button below or press <kbd className="px-2 py-1 bg-gray-100 rounded text-sm font-mono">F11</kbd> on your keyboard.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleEnterFullscreen}
+                className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg hover:bg-primary-700 font-semibold transition-colors"
+              >
+                Enter Fullscreen
+              </button>
+              <button
+                onClick={() => setShowFullscreenPrompt(false)}
+                className="flex-1 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 font-semibold transition-colors"
+              >
+                Continue Anyway
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -561,6 +692,24 @@ export default function ExamRoom() {
           </div>
         </div>
       </div>
+
+      {/* Copyright Footer */}
+      <footer className="bg-slate-900 border-t border-slate-700 py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs text-gray-400">
+            © 2025 Aptitude Taker RD by{' '}
+            <a 
+              href="https://www.rudranshdevelopment.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              Rudransh Development
+            </a>
+            . All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

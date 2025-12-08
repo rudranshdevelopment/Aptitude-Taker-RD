@@ -150,15 +150,35 @@ export default function AdminLayout({ children }) {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-180px)]">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-auto">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500">
+      <footer className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-slate-700 mt-12">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-gray-300 font-medium">
             © 2025 Aptitude Taker RD. All rights reserved.
+          </p>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            Developed by{' '}
+            <a 
+              href="https://www.rudranshdevelopment.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              Rudransh Development
+            </a>
+            {' • '}
+            <a 
+              href="https://www.rudranshdevelopment.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              www.rudranshdevelopment.com
+            </a>
           </p>
         </div>
       </footer>

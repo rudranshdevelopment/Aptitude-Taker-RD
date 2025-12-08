@@ -13,7 +13,8 @@ import {
   MdFilterList,
   MdCheckCircle,
   MdPending,
-  MdWarning
+  MdWarning,
+  MdDelete
 } from 'react-icons/md'
 
 export default function AssignmentsPage() {
@@ -159,6 +160,29 @@ This is an automated email. Please do not reply to this email.`
     const emailText = generateEmail(assignment)
     navigator.clipboard.writeText(emailText)
     toast.success('Professional email copied to clipboard!')
+  }
+
+  const handleDeleteAssignment = async (assignmentId, candidateName) => {
+    if (!confirm(`Are you sure you want to delete the assignment for ${candidateName}? This will also delete all related attempts, answers, and events.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/admin/assignments/${assignmentId}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        toast.success('Assignment deleted successfully')
+        fetchAssignments() // Refresh list
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to delete assignment')
+      }
+    } catch (error) {
+      console.error('Error deleting assignment:', error)
+      toast.error('Failed to delete assignment')
+    }
   }
 
   return (
@@ -354,6 +378,13 @@ This is an automated email. Please do not reply to this email.`
                               <MdEmail className="mr-1" size={16} />
                               Copy Email
                             </button>
+                            <button
+                              onClick={() => handleDeleteAssignment(assignment.id, assignment.user?.name || assignment.user?.email || 'this candidate')}
+                              className="inline-flex items-center text-xs font-medium text-red-600 hover:text-red-800 transition-colors text-left"
+                            >
+                              <MdDelete className="mr-1" size={16} />
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -390,11 +421,11 @@ This is an automated email. Please do not reply to this email.`
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="grid grid-cols-2 gap-2 mt-4">
                     {assignment.latestAttempt && (
                       <Link
                         href={`/admin/results/${assignment.latestAttempt.id}`}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-primary-50 text-primary-700 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
+                        className="inline-flex items-center justify-center px-3 py-2 bg-primary-50 text-primary-700 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
                       >
                         <MdVisibility className="mr-1" size={16} />
                         View
@@ -405,17 +436,24 @@ This is an automated email. Please do not reply to this email.`
                         navigator.clipboard.writeText(getInviteLink(assignment.inviteToken))
                         toast.success('Link copied!')
                       }}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                      className="inline-flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       <MdContentCopy className="mr-1" size={16} />
                       Link
                     </button>
                     <button
                       onClick={() => copyEmail(assignment)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-50 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors"
+                      className="inline-flex items-center justify-center px-3 py-2 bg-green-50 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors"
                     >
                       <MdEmail className="mr-1" size={16} />
                       Email
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAssignment(assignment.id, assignment.user?.name || assignment.user?.email || 'this candidate')}
+                      className="inline-flex items-center justify-center px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <MdDelete className="mr-1" size={16} />
+                      Delete
                     </button>
                   </div>
                 </div>

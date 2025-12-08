@@ -75,7 +75,7 @@ export default function AdminLoginPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="admin@example.com"
+                placeholder="Enter your email address"
                 className="w-full border-2 border-gray-300 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
               />
             </div>
@@ -114,13 +114,6 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
-
-          {/* Helper Text */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Default credentials: admin@example.com / Admin@123
-            </p>
-          </div>
         </div>
 
         {/* Footer */}

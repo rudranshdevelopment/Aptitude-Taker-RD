@@ -11,7 +11,8 @@ import {
   MdPerson,
   MdDescription,
   MdFlag,
-  MdFilterList
+  MdFilterList,
+  MdDelete
 } from 'react-icons/md'
 
 export default function ResultsPage() {
@@ -47,6 +48,32 @@ export default function ResultsPage() {
     if (filter === 'in_progress') return attempt.status === 'in_progress'
     return true
   })
+
+  const handleDelete = async (attemptId, event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    if (!confirm('Are you sure you want to delete this attempt? This action cannot be undone and will delete all associated answers, events, and recordings.')) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/admin/attempts/${attemptId}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        toast.success('Attempt deleted successfully')
+        fetchAttempts() // Refresh the list
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to delete attempt')
+      }
+    } catch (error) {
+      console.error('Error deleting attempt:', error)
+      toast.error('Failed to delete attempt')
+    }
+  }
 
   return (
     <AdminLayout>
@@ -99,55 +126,62 @@ export default function ResultsPage() {
             <div className="hidden md:block bg-white shadow-lg overflow-hidden rounded-xl border border-gray-200">
               <ul className="divide-y divide-gray-100">
                 {filteredAttempts.map((attempt) => (
-                  <li key={attempt.id}>
-                    <Link
-                      href={`/admin/results/${attempt.id}`}
-                      className="block hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="px-6 py-5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <MdPerson className="text-gray-500" size={20} />
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {attempt.user?.name || attempt.user?.email || 'Unknown User'}
-                              </h3>
-                              {attempt.flagged && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                  <MdFlag className="mr-1" size={12} />
-                                  Flagged
-                                </span>
-                              )}
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                attempt.status === 'submitted' ? 'bg-green-100 text-green-800' :
-                                attempt.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {attempt.status}
+                  <li key={attempt.id} className="hover:bg-gray-50 transition-colors">
+                    <div className="px-6 py-5">
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/admin/results/${attempt.id}`}
+                          className="flex-1"
+                        >
+                          <div className="flex items-center space-x-3 mb-2">
+                            <MdPerson className="text-gray-500" size={20} />
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {attempt.user?.name || attempt.user?.email || 'Unknown User'}
+                            </h3>
+                            {attempt.flagged && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <MdFlag className="mr-1" size={12} />
+                                Flagged
                               </span>
-                            </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                              <MdDescription className="text-gray-400" size={16} />
-                              <span className="font-medium">{attempt.assignment.test.title}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                              <span>Started: {new Date(attempt.startedAt).toLocaleString()}</span>
-                              {attempt.finishedAt && (
-                                <span>Finished: {new Date(attempt.finishedAt).toLocaleString()}</span>
-                              )}
-                              {attempt.score !== null && attempt.score !== undefined && (
-                                <span className="font-semibold text-primary-600">
-                                  Score: {attempt.score.toFixed(2)}%
-                                </span>
-                              )}
-                            </div>
+                            )}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              attempt.status === 'submitted' ? 'bg-green-100 text-green-800' :
+                              attempt.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {attempt.status}
+                            </span>
                           </div>
-                          <div className="flex items-center">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                            <MdDescription className="text-gray-400" size={16} />
+                            <span className="font-medium">{attempt.assignment.test.title}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <span>Started: {new Date(attempt.startedAt).toLocaleString()}</span>
+                            {attempt.finishedAt && (
+                              <span>Finished: {new Date(attempt.finishedAt).toLocaleString()}</span>
+                            )}
+                            {attempt.score !== null && attempt.score !== undefined && (
+                              <span className="font-semibold text-primary-600">
+                                Score: {attempt.score.toFixed(2)}%
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={(e) => handleDelete(attempt.id, e)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete attempt"
+                          >
+                            <MdDelete size={20} />
+                          </button>
+                          <Link href={`/admin/results/${attempt.id}`}>
                             <MdVisibility className="text-primary-600" size={24} />
-                          </div>
+                          </Link>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -156,13 +190,15 @@ export default function ResultsPage() {
             {/* Mobile View */}
             <div className="md:hidden space-y-4">
               {filteredAttempts.map((attempt) => (
-                <Link
+                <div
                   key={attempt.id}
-                  href={`/admin/results/${attempt.id}`}
-                  className="block bg-white shadow-lg rounded-xl p-5 border border-gray-200 hover:border-primary-400 transition-all"
+                  className="bg-white shadow-lg rounded-xl p-5 border border-gray-200 hover:border-primary-400 transition-all"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <div>
+                    <Link
+                      href={`/admin/results/${attempt.id}`}
+                      className="flex-1"
+                    >
                       <h3 className="font-semibold text-gray-900 flex items-center">
                         <MdPerson className="mr-2 text-gray-500" size={18} />
                         {attempt.user?.name || attempt.user?.email || 'Unknown'}
@@ -170,20 +206,31 @@ export default function ResultsPage() {
                       <p className="text-sm text-gray-600 mt-1">
                         {attempt.assignment.test.title}
                       </p>
+                    </Link>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => handleDelete(attempt.id, e)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete attempt"
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                      {attempt.flagged && (
+                        <MdFlag className="text-red-600" size={20} />
+                      )}
                     </div>
-                    {attempt.flagged && (
-                      <MdFlag className="text-red-600" size={20} />
+                  </div>
+                  <Link href={`/admin/results/${attempt.id}`}>
+                    {attempt.score !== null && attempt.score !== undefined && (
+                      <div className="text-2xl font-bold text-primary-600 mb-2">
+                        {attempt.score.toFixed(1)}%
+                      </div>
                     )}
-                  </div>
-                  {attempt.score !== null && attempt.score !== undefined && (
-                    <div className="text-2xl font-bold text-primary-600 mb-2">
-                      {attempt.score.toFixed(1)}%
+                    <div className="text-xs text-gray-500">
+                      {new Date(attempt.startedAt).toLocaleString()}
                     </div>
-                  )}
-                  <div className="text-xs text-gray-500">
-                    {new Date(attempt.startedAt).toLocaleString()}
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           </>

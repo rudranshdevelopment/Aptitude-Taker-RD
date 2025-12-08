@@ -121,14 +121,46 @@ export default function FinishPage() {
 
         <div className="text-center">
           <button
-            onClick={() => window.close()}
+            onClick={() => {
+              // Function to close windows
+              const closeWindows = () => {
+                try {
+                  // Send message to opener window to close itself
+                  if (window.opener && !window.opener.closed) {
+                    try {
+                      window.opener.postMessage({ type: 'CLOSE_WINDOW' }, '*')
+                      // Also try to close it directly
+                      window.opener.close()
+                    } catch (e) {
+                      console.log('Could not close opener window:', e)
+                    }
+                  }
+                  
+                  // Close the current window
+                  window.close()
+                  
+                  // Fallback: if window didn't close, redirect to blank page
+                  setTimeout(() => {
+                    if (!document.hidden) {
+                      window.location.href = 'about:blank'
+                    }
+                  }, 200)
+                } catch (error) {
+                  console.error('Error closing window:', error)
+                  // Final fallback: redirect to blank page
+                  window.location.href = 'about:blank'
+                }
+              }
+              
+              closeWindows()
+            }}
             className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white font-semibold rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all shadow-md hover:shadow-lg"
           >
             <MdClose className="mr-2" size={20} />
             Close Window
           </button>
           <p className="text-xs text-gray-500 mt-4">
-            If the window doesn't close, you can safely close this tab
+            This will close the test window. If it doesn't close automatically, you can manually close this tab.
           </p>
         </div>
       </div>

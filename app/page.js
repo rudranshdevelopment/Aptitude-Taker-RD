@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   MdCheckCircle, 
   MdSecurity, 
@@ -23,9 +24,16 @@ export default function HomePage() {
             {/* Left Side - Branding & Info */}
             <div className="text-white space-y-8">
               {/* Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="bg-white rounded-2xl p-3 shadow-2xl">
-                  <MdAssignment className="text-primary-600" size={48} />
+              <div className="flex items-center space-x-4">
+                <div className="relative w-20 h-20 flex-shrink-0">
+                  <Image
+                    src="/assets/logo.png"
+                    alt="Rudransh Development Logo"
+                    width={80}
+                    height={80}
+                    className="object-contain"
+                    priority
+                  />
                 </div>
                 <div>
                   <h1 className="text-4xl md:text-5xl font-extrabold">
@@ -117,32 +125,6 @@ export default function HomePage() {
                     Access Admin Dashboard
                   </button>
                 </Link>
-
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 text-center mb-4">
-                    Default credentials for demo:
-                  </p>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 flex items-center">
-                        <MdEmail className="mr-2 text-gray-400" size={16} />
-                        Email:
-                      </span>
-                      <code className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-gray-200">
-                        admin@example.com
-                      </code>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 flex items-center">
-                        <MdSecurity className="mr-2 text-gray-400" size={16} />
-                        Password:
-                      </span>
-                      <code className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-gray-200">
-                        Admin@123
-                      </code>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Security Badge */}
@@ -341,10 +323,16 @@ export default function HomePage() {
           </div>
           <div className="border-t border-gray-800 pt-8 text-center">
             <p className="text-sm">
-              © 2025 Aptitude Taker RD by <span className="text-primary-400 font-semibold">Rudransh Development</span>. All rights reserved.
-            </p>
-            <p className="text-xs text-gray-600 mt-2">
-              Version 1.0.0 • Production Ready 🚀
+              © 2025 Aptitude Taker RD by{' '}
+              <a 
+                href="https://www.rudranshdevelopment.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary-400 hover:text-primary-300 transition-colors font-semibold"
+              >
+                Rudransh Development
+              </a>
+              . All rights reserved.
             </p>
           </div>
         </div>
