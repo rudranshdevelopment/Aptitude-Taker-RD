@@ -52,13 +52,22 @@ export default function AdminLoginPage() {
         toast.success('Login successful')
         
         // Store success message for dashboard
-        sessionStorage.setItem('loginSuccess', 'true')
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('loginSuccess', 'true')
+        }
         
-        // Wait for NextAuth to set the cookie
-        // Then verify it's available via session endpoint
+        // In production, cookies need a moment to be set and propagated
+        // Wait a bit longer in production to ensure cookie is available to middleware
+        // Check if we're on HTTPS (production indicator)
+        const isProduction = window.location.protocol === 'https:'
+        const waitTime = isProduction ? 1000 : 500
+        
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        
+        // Verify session cookie is set
         let cookieReady = false
         let attempts = 0
-        const maxAttempts = 25 // 5 seconds total
+        const maxAttempts = isProduction ? 30 : 20 // More attempts in production
         
         while (!cookieReady && attempts < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, 200))
@@ -72,9 +81,15 @@ export default function AdminLoginPage() {
           attempts++
         }
         
-        // Redirect using window.location which ensures cookies are sent
-        // This forces a full page reload with all cookies
-        window.location.href = '/admin/dashboard'
+        // Use window.location.replace to avoid back button issues
+        // This ensures a full page reload with all cookies sent
+        if (isProduction) {
+          // In production, use replace to avoid history issues
+          window.location.replace('/admin/dashboard')
+        } else {
+          // In development, use href
+          window.location.href = '/admin/dashboard'
+        }
       } else {
         toast.error('Login failed. Please try again.')
         setLoading(false)
