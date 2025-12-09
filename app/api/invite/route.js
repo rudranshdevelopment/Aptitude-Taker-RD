@@ -8,6 +8,24 @@ import { formatDuration } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
+// Helper function to get base URL from environment or request headers
+function getBaseUrl(request) {
+  // Prioritize environment variables
+  if (process.env.APP_URL) return process.env.APP_URL
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
+  
+  // Try to get from request headers (works in production with proxies like Vercel)
+  const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+  if (host) {
+    const protocol = request.headers.get('x-forwarded-proto') || 
+                    (host.includes('localhost') ? 'http' : 'https')
+    return `${protocol}://${host}`
+  }
+  
+  // Fallback for development
+  return 'http://localhost:3000'
+}
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,6 +35,9 @@ export async function POST(request) {
 
     const body = await request.json()
     const { testId, email, userId, expiresAt, attemptsAllowed, linkMode, sendEmail: shouldSendEmail } = body
+    
+    // Get base URL once for this request
+    const baseUrl = getBaseUrl(request)
 
     const test = await prisma.test.findUnique({
       where: { id: testId },
@@ -77,7 +98,7 @@ export async function POST(request) {
 
     // Send email if requested and email is provided
     if (shouldSendEmail && assignment.user?.email) {
-      const inviteLink = `${process.env.APP_URL || 'http://localhost:3000'}/test/verify/${inviteToken}`
+      const inviteLink = `${baseUrl}/test/verify/${inviteToken}`
       const duration = formatDuration(test.durationSeconds)
       const expiryDate = expiresAt ? new Date(expiresAt).toLocaleDateString() : 'No expiry'
 
@@ -97,7 +118,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       assignment,
-      inviteLink: `${process.env.APP_URL || 'http://localhost:3000'}/test/verify/${inviteToken}`,
+      inviteLink: `${baseUrl}/test/verify/${inviteToken}`,
       user: assignment.user,
     }, { status: 201 })
   } catch (error) {

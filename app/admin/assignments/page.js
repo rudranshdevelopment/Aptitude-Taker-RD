@@ -102,7 +102,12 @@ export default function AssignmentsPage() {
   }
 
   const getInviteLink = (token) => {
-    return `${typeof window !== 'undefined' ? window.location.origin : ''}/test/verify/${token}`
+    // Always use window.location.origin which automatically uses the correct domain
+    // This works in both development (localhost) and production (your domain)
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/test/verify/${token}`
+    }
+    return `/test/verify/${token}` // Relative URL fallback
   }
 
   const generateEmail = (assignment) => {
