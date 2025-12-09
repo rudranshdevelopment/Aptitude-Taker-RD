@@ -24,33 +24,7 @@ export default function AdminDashboard() {
   })
   const [loading, setLoading] = useState(true)
 
-  // Show success message if redirected from login
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const loginSuccess = sessionStorage.getItem('loginSuccess')
-      if (loginSuccess === 'true') {
-        toast.success('Login successful!')
-        sessionStorage.removeItem('loginSuccess')
-      }
-    }
-  }, [])
-
-  // Wait for session to be ready before rendering
-  if (status === 'loading' || !session) {
-    return (
-      <AdminLayout>
-        <div className="text-center py-16">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading dashboard...</p>
-        </div>
-      </AdminLayout>
-    )
-  }
-
-  useEffect(() => {
-    fetchStats()
-  }, [])
-
+  // Fetch stats function - must be defined before useEffect
   const fetchStats = async () => {
     try {
       const [testsRes, attemptsRes] = await Promise.all([
@@ -83,6 +57,38 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show success message if redirected from login - MUST be before conditional return
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginSuccess = sessionStorage.getItem('loginSuccess')
+      if (loginSuccess === 'true') {
+        toast.success('Login successful!')
+        sessionStorage.removeItem('loginSuccess')
+      }
+    }
+  }, [])
+
+  // Fetch stats - MUST be before conditional return to fix hooks violation
+  useEffect(() => {
+    // Only fetch if session is ready
+    if (status !== 'loading' && session) {
+      fetchStats()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session])
+
+  // Wait for session to be ready before rendering
+  if (status === 'loading' || !session) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-16">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading dashboard...</p>
+        </div>
+      </AdminLayout>
+    )
   }
 
   const StatCard = ({ icon: Icon, label, value, color, bgColor }) => (
