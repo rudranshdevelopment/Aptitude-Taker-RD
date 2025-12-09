@@ -60,36 +60,40 @@ export default function AdminLoginPage() {
         // Wait a bit longer in production to ensure cookie is available to middleware
         // Check if we're on HTTPS (production indicator)
         const isProduction = window.location.protocol === 'https:'
-        const waitTime = isProduction ? 1000 : 500
+        const waitTime = isProduction ? 1500 : 500
         
         await new Promise(resolve => setTimeout(resolve, waitTime))
         
-        // Verify session cookie is set
+        // Verify session cookie is set by checking session endpoint
         let cookieReady = false
         let attempts = 0
-        const maxAttempts = isProduction ? 30 : 20 // More attempts in production
+        const maxAttempts = isProduction ? 40 : 20 // More attempts in production
         
         while (!cookieReady && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 200))
+          await new Promise(resolve => setTimeout(resolve, 150))
           
           // Check if session cookie is available
-          const sessionData = await refreshSession()
-          if (sessionData && sessionData.user && sessionData.user.role === 'admin') {
-            cookieReady = true
-            break
+          try {
+            const sessionData = await refreshSession()
+            if (sessionData && sessionData.user && sessionData.user.role === 'admin') {
+              cookieReady = true
+              console.log('✅ Session cookie confirmed, redirecting...')
+              break
+            }
+          } catch (error) {
+            console.error('Session check error:', error)
           }
           attempts++
         }
         
-        // Use window.location.replace to avoid back button issues
-        // This ensures a full page reload with all cookies sent
-        if (isProduction) {
-          // In production, use replace to avoid history issues
-          window.location.replace('/admin/dashboard')
-        } else {
-          // In development, use href
-          window.location.href = '/admin/dashboard'
+        if (!cookieReady) {
+          console.warn('⚠️ Cookie not confirmed, but redirecting anyway...')
         }
+        
+        // Use window.location.replace for a hard redirect
+        // This ensures a full page reload with all cookies sent
+        // The middleware will check the cookie on the server side
+        window.location.replace('/admin/dashboard')
       } else {
         toast.error('Login failed. Please try again.')
         setLoading(false)
